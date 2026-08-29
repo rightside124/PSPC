@@ -164,8 +164,8 @@
 
 <div class="container">
     <div>
-        <h1>PAGASA Next-Day SPI Calculator</h1>
-        <p class="subtitle">Target-Day Focused Suspension Probability Engine</p>
+        <h1>Precise Suspension Probability Forecast Calculator</h1>
+        <p class="subtitle">A PAGASA based Suspension Calculator that precisely calculates the suspension chances for the next 3 days.</p>
     </div>
 
     <div class="card result-card">
@@ -206,31 +206,31 @@
     </div>
 
     <div class="card">
-        <div class="card-title">3. Target-Day Time-Block Rain Rates (mm/hr)</div>
+        <div class="card-title">3. Key Forecast Hours (mm/hr)</div>
         <div class="grid-2">
             <div class="form-group">
-                <label for="block-1">7 PM - 11 PM (Prior Evening) [10% Wt]:</label>
+                <label for="block-1">7 PM - 11 PM [10% Wt]:</label>
                 <div class="range-container">
                     <input type="range" id="block-1" min="0" max="35" step="0.1" value="0" oninput="calculateSPI()">
                     <div class="range-value" id="block-1-val">0.0 mm/h</div>
                 </div>
             </div>
             <div class="form-group">
-                <label for="block-2">3 AM - 6 AM (Commute Preparation) [50% Wt]:</label>
+                <label for="block-2">3 AM - 6 AM [50% Wt]:</label>
                 <div class="range-container">
                     <input type="range" id="block-2" min="0" max="35" step="0.1" value="0" oninput="calculateSPI()">
                     <div class="range-value" id="block-2-val">0.0 mm/h</div>
                 </div>
             </div>
             <div class="form-group">
-                <label for="block-3">10 AM - 12 PM (Mid-day Class Window) [25% Wt]:</label>
+                <label for="block-3">10 AM - 12 PM [25% Wt]:</label>
                 <div class="range-container">
                     <input type="range" id="block-3" min="0" max="35" step="0.1" value="0" oninput="calculateSPI()">
                     <div class="range-value" id="block-3-val">0.0 mm/h</div>
                 </div>
             </div>
             <div class="form-group">
-                <label for="block-4">2 PM - 5 PM (Afternoon Dismissal) [15% Wt]:</label>
+                <label for="block-4">2 PM - 5 PM [15% Wt]:</label>
                 <div class="range-container">
                     <input type="range" id="block-4" min="0" max="35" step="0.1" value="0" oninput="calculateSPI()">
                     <div class="range-value" id="block-4-val">0.0 mm/h</div>
@@ -240,7 +240,7 @@
     </div>
 
     <div class="card">
-        <div class="card-title">4. Background Modifiers (Real-Time Radar & Saturation)</div>
+        <div class="card-title">4. Rain Accumulation / Current Heavy Rainfall Warning</div>
         <div class="grid-2">
             <div class="form-group">
                 <label for="accum-24">Prior 24-Hour Accumulation (mm):</label>
@@ -274,25 +274,25 @@
             </thead>
             <tbody>
                 <tr>
-                    <td>Target-Day IBF ($W_{\text{IBF}}$)</td>
+                    <td>Target-Day IBF</td>
                     <td>Primary Driver (Max 60.0)</td>
                     <td id="t-ibf-pts">0.00%</td>
                     <td id="t-ibf-floor">None</td>
                 </tr>
                 <tr>
-                    <td>24-HR Forecast Map ($F_{24\text{h}}$)</td>
+                    <td>24-HR Forecast Map</td>
                     <td>Separate Component (Max 45.0)</td>
                     <td id="t-map-pts">0.00%</td>
                     <td id="t-map-floor">None</td>
                 </tr>
                 <tr>
-                    <td>Time-Block Forecast ($F_{\text{blocks}}$)</td>
+                    <td>Key Time Forecast</td>
                     <td>Commute Weighted (Max 30.0)</td>
                     <td id="t-block-pts">0.00%</td>
                     <td>—</td>
                 </tr>
                 <tr>
-                    <td>Antecedent Saturation ($A_{\text{accum}}$)</td>
+                    <td>Accumulation / Warning</td>
                     <td>Background Mod (Max 15.0)</td>
                     <td id="t-accum-pts">0.00%</td>
                     <td>—</td>
