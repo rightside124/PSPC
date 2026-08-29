@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAGASA Target-Day Suspension Probability Index (SPI)</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-color: #38bdf8;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 950px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 5px;
+            color: var(--accent-color);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.9em;
+            margin-top: 0;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            color: white;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .range-value {
+            min-width: 120px;
+            text-align: right;
+            font-weight: bold;
+            color: var(--accent-color);
+            font-size: 0.9em;
+        }
+
+        .result-card {
+            position: sticky;
+            top: 20px;
+            text-align: center;
+            background: #0f172a;
+            border: 2px solid var(--accent-color);
+            z-index: 10;
+        }
+
+        .spi-score {
+            font-size: 3.5em;
+            font-weight: 900;
+            margin: 5px 0;
+        }
+
+        .spi-range {
+            font-size: 1.05em;
+            color: #94a3b8;
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        .breakdown-table {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+            font-size: 0.85em;
+            text-align: left;
+        }
+
+        .breakdown-table th, .breakdown-table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .breakdown-table th { color: #94a3b8; }
+
+        .override-badge {
+            display: inline-block;
+            background: #7c3aed;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div>
+        <h1>PAGASA Next-Day SPI Calculator</h1>
+        <p class="subtitle">Target-Day Focused Suspension Probability Engine</p>
+    </div>
+
+    <div class="card result-card">
+        <div>Target-Day Suspension Probability Index (SPI)</div>
+        <div id="spi-score" class="spi-score">0.00%</div>
+        <div id="spi-range" class="spi-range">Uncertainty Range: Min 0.00% — Max 0.00%</div>
+        <div id="status-badge" class="status-badge" style="background:#334155;">Low Risk</div>
+        <div id="action-text" style="margin-top: 10px; color: #cbd5e1; font-size: 0.9em;">Normal operations; continuous monitoring.</div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">1. Target-Day Impact-Based Forecast (IBF) — Primary Weight</div>
+        <div class="form-group">
+            <label for="ibf-level">Target Day IBF Category & Likelihood:</label>
+            <select id="ibf-level" onchange="calculateSPI()">
+                <option value="0">Minimal Impact / Low Likelihood (0.0 pts)</option>
+                <option value="10">Minor Impact / Medium Likelihood (10.0 pts)</option>
+                <option value="20">Minor Impact / High Likelihood (20.0 pts)</option>
+                <option value="30">Significant Impact / Medium Likelihood (30.0 pts)</option>
+                <option value="40">Significant Impact / High Likelihood (40.0 pts)</option>
+                <option value="50">Severe Impact / Medium Likelihood (50.0 pts)</option>
+                <option value="60">Severe Impact / High Likelihood (60.0 pts) [Override Floor: 80%]</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">2. PAGASA 24-HR Rainfall Forecast Map (Separate Component)</div>
+        <div class="form-group">
+            <label for="forecast-24h-map">Target Day 24-HR Forecast Map Threshold:</label>
+            <select id="forecast-24h-map" onchange="calculateSPI()">
+                <option value="0">&lt; 50 mm (Light to Moderate / Minimal Risk) — 0.0 pts</option>
+                <option value="15">50 - 100 mm (Yellow Zone: Localized Flooding) — 15.0 pts</option>
+                <option value="30">100 - 200 mm (Orange Zone: Widespread Flooding Likely) — 30.0 pts [Override Floor: 65%]</option>
+                <option value="45">&gt; 200 mm (Red Zone: Severe/Extreme Flooding) — 45.0 pts [Override Floor: 85%]</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">3. Target-Day Time-Block Rain Rates (mm/hr)</div>
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="block-1">7 PM - 11 PM (Prior Evening) [10% Wt]:</label>
+                <div class="range-container">
+                    <input type="range" id="block-1" min="0" max="35" step="0.1" value="0" oninput="calculateSPI()">
+                    <div class="range-value" id="block-1-val">0.0 mm/h</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="block-2">3 AM - 6 AM (Commute Preparation) [50% Wt]:</label>
+                <div class="range-container">
+                    <input type="range" id="block-2" min="0" max="35" step="0.1" value="0" oninput="calculateSPI()">
+                    <div class="range-value" id="block-2-val">0.0 mm/h</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="block-3">10 AM - 12 PM (Mid-day Class Window) [25% Wt]:</label>
+                <div class="range-container">
+                    <input type="range" id="block-3" min="0" max="35" step="0.1" value="0" oninput="calculateSPI()">
+                    <div class="range-value" id="block-3-val">0.0 mm/h</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="block-4">2 PM - 5 PM (Afternoon Dismissal) [15% Wt]:</label>
+                <div class="range-container">
+                    <input type="range" id="block-4" min="0" max="35" step="0.1" value="0" oninput="calculateSPI()">
+                    <div class="range-value" id="block-4-val">0.0 mm/h</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">4. Background Modifiers (Real-Time Radar & Saturation)</div>
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="accum-24">Prior 24-Hour Accumulation (mm):</label>
+                <div class="range-container">
+                    <input type="range" id="accum-24" min="0" max="250" step="0.1" value="0" oninput="calculateSPI()">
+                    <div class="range-value" id="accum-24-val">0.0 mm</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="warning-level">Active Short-Term Heavy Rainfall Warning:</label>
+                <select id="warning-level" onchange="calculateSPI()">
+                    <option value="0">None / Light Advisory (0.0 pts)</option>
+                    <option value="5">Yellow Warning (5.0 pts)</option>
+                    <option value="10">Orange Warning (10.0 pts)</option>
+                    <option value="15">Red Warning (15.0 pts)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Target-Day Formula Score Breakdown</div>
+        <table class="breakdown-table">
+            <thead>
+                <tr>
+                    <th>Component</th>
+                    <th>Sub-system Weight</th>
+                    <th>Points Contributed</th>
+                    <th>Active Override Floor</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Target-Day IBF ($W_{\text{IBF}}$)</td>
+                    <td>Primary Driver (Max 60.0)</td>
+                    <td id="t-ibf-pts">0.00%</td>
+                    <td id="t-ibf-floor">None</td>
+                </tr>
+                <tr>
+                    <td>24-HR Forecast Map ($F_{24\text{h}}$)</td>
+                    <td>Separate Component (Max 45.0)</td>
+                    <td id="t-map-pts">0.00%</td>
+                    <td id="t-map-floor">None</td>
+                </tr>
+                <tr>
+                    <td>Time-Block Forecast ($F_{\text{blocks}}$)</td>
+                    <td>Commute Weighted (Max 30.0)</td>
+                    <td id="t-block-pts">0.00%</td>
+                    <td>—</td>
+                </tr>
+                <tr>
+                    <td>Antecedent Saturation ($A_{\text{accum}}$)</td>
+                    <td>Background Mod (Max 15.0)</td>
+                    <td id="t-accum-pts">0.00%</td>
+                    <td>—</td>
+                </tr>
+                <tr>
+                    <td>Active Short-Term Warning ($W_{\text{warning}}$)</td>
+                    <td>Background Mod (Max 15.0)</td>
+                    <td id="t-warn-pts">0.00%</td>
+                    <td>—</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function interpolate(val, minIn, maxIn, minOut, maxOut) {
+    if (val <= minIn) return minOut;
+    if (val >= maxIn) return maxOut;
+    return minOut + ((val - minIn) / (maxIn - minIn)) * (maxOut - minOut);
+}
+
+function calculateSPI() {
+    // 1. Target Day IBF
+    const ibfPts = parseFloat(document.getElementById('ibf-level').value);
+    let ibfFloor = 0;
+    if (ibfPts >= 60) ibfFloor = 80;
+    else if (ibfPts >= 40) ibfFloor = 60;
+    else if (ibfPts >= 30) ibfFloor = 45;
+
+    // 2. 24-HR Rainfall Forecast Map
+    const mapPts = parseFloat(document.getElementById('forecast-24h-map').value);
+    let mapFloor = 0;
+    if (mapPts >= 45) mapFloor = 85;
+    else if (mapPts >= 30) mapFloor = 65;
+    else if (mapPts >= 15) mapFloor = 35;
+
+    // 3. Time-Block Forecast
+    const b1 = parseFloat(document.getElementById('block-1').value);
+    const b2 = parseFloat(document.getElementById('block-2').value);
+    const b3 = parseFloat(document.getElementById('block-3').value);
+    const b4 = parseFloat(document.getElementById('block-4').value);
+
+    document.getElementById('block-1-val').innerText = `${b1.toFixed(1)} mm/h`;
+    document.getElementById('block-2-val').innerText = `${b2.toFixed(1)} mm/h`;
+    document.getElementById('block-3-val').innerText = `${b3.toFixed(1)} mm/h`;
+    document.getElementById('block-4-val').innerText = `${b4.toFixed(1)} mm/h`;
+
+    const scoreB1 = interpolate(b1, 0, 25, 0, 30);
+    const scoreB2 = interpolate(b2, 0, 25, 0, 30);
+    const scoreB3 = interpolate(b3, 0, 25, 0, 30);
+    const scoreB4 = interpolate(b4, 0, 25, 0, 30);
+
+    const blockPts = (0.10 * scoreB1) + (0.50 * scoreB2) + (0.25 * scoreB3) + (0.15 * scoreB4);
+
+    // 4. Background Modifiers
+    const acc24 = parseFloat(document.getElementById('accum-24').value);
+    document.getElementById('accum-24-val').innerText = `${acc24.toFixed(1)} mm`;
+    const accumPts = interpolate(acc24, 0, 150, 0, 15);
+
+    const warnPts = parseFloat(document.getElementById('warning-level').value);
+
+    // Sum Base Model Score
+    let rawSum = ibfPts + mapPts + blockPts + accumPts + warnPts;
+    
+    // Scale Sum to percentage (Max potential ~165 normalized down)
+    let calculatedSPI = (rawSum / 140) * 100;
+
+    // Apply Active Floor Overrides
+    const activeFloor = Math.max(ibfFloor, mapFloor);
+    let finalSPI = Math.max(calculatedSPI, activeFloor);
+    if (finalSPI > 100) finalSPI = 100;
+
+    // Min-Max Uncertainty Range
+    const uncertainty = 0.05; // +/- 5%
+    let minSPI = Math.max(0, finalSPI * (1 - uncertainty));
+    let maxSPI = Math.min(100, finalSPI * (1 + uncertainty));
+
+    // UI Updates
+    document.getElementById('spi-score').innerText = finalSPI.toFixed(2) + "%";
+    document.getElementById('spi-range').innerText = `Uncertainty Range: Min ${minSPI.toFixed(2)}% — Max ${maxSPI.toFixed(2)}%`;
+
+    const badge = document.getElementById('status-badge');
+    const actionText = document.getElementById('action-text');
+
+    if (finalSPI >= 80) {
+        badge.innerText = "Near-Certain Suspension";
+        badge.style.backgroundColor = "#ef4444";
+        badge.style.color = "#ffffff";
+        actionText.innerText = "Target-day indicators trigger automatic/widespread class suspensions.";
+    } else if (finalSPI >= 60) {
+        badge.innerText = "High Risk";
+        badge.style.backgroundColor = "#f97316";
+        badge.style.color = "#ffffff";
+        actionText.innerText = "High likelihood of early morning class suspensions across all levels.";
+    } else if (finalSPI >= 35) {
+        badge.innerText = "Moderate Risk";
+        badge.style.backgroundColor = "#eab308";
+        badge.style.color = "#000000";
+        actionText.innerText = "Possible localized or primary-level suspensions in flood-prone LGUs.";
+    } else {
+        badge.innerText = "Low Risk";
+        badge.style.backgroundColor = "#334155";
+        badge.style.color = "#ffffff";
+        actionText.innerText = "Normal operations expected on target day.";
+    }
+
+    // Breakdown Table Render
+    document.getElementById('t-ibf-pts').innerText = `${ibfPts.toFixed(1)}%`;
+    document.getElementById('t-ibf-floor').innerText = ibfFloor > 0 ? `${ibfFloor}% Floor` : 'None';
+
+    document.getElementById('t-map-pts').innerText = `${mapPts.toFixed(1)}%`;
+    document.getElementById('t-map-floor').innerText = mapFloor > 0 ? `${mapFloor}% Floor` : 'None';
+
+    document.getElementById('t-block-pts').innerText = `${blockPts.toFixed(2)}%`;
+    document.getElementById('t-accum-pts').innerText = `${accumPts.toFixed(2)}%`;
+    document.getElementById('t-warn-pts').innerText = `${warnPts.toFixed(1)}%`;
+}
+
+// Initial Run
+calculateSPI();
+</script>
+
+</body>
+</html>
