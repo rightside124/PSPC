@@ -148,16 +148,6 @@
         }
 
         .breakdown-table th { color: #94a3b8; }
-
-        .override-badge {
-            display: inline-block;
-            background: #7c3aed;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75em;
-            margin-left: 5px;
-        }
     </style>
 </head>
 <body>
@@ -165,7 +155,7 @@
 <div class="container">
     <div>
         <h1>Precise Suspension Probability Forecast Calculator</h1>
-        <p class="subtitle">A PAGASA based Suspension Calculator that precisely calculates the suspension chances for the next 3 days.</p>
+        <p class="subtitle">A PAGASA-based Suspension Calculator that precisely calculates suspension chances up to 5 days ahead.</p>
     </div>
 
     <div class="card result-card">
@@ -177,36 +167,92 @@
     </div>
 
     <div class="card">
-        <div class="card-title">1. Target-Day Impact-Based Forecast (IBF) — Primary Weight</div>
+        <div class="card-title">0. Forecast Lead Horizon (Up to 5 Days)</div>
         <div class="form-group">
-            <label for="ibf-level">Target Day IBF Category & Likelihood:</label>
+            <label for="lead-horizon">Select Target Forecast Horizon:</label>
+            <select id="lead-horizon" onchange="calculateSPI()">
+                <option value="1">Day 1 Forecast (Next 24 Hours / Target Day) — Uncertainty: ±4%</option>
+                <option value="2">Day 2 Forecast (48 Hours Ahead) — Uncertainty: ±8%</option>
+                <option value="3">Day 3 Forecast (72 Hours Ahead) — Uncertainty: ±13%</option>
+                <option value="4">Day 4 Forecast (96 Hours Ahead) — Uncertainty: ±18%</option>
+                <option value="5">Day 5 Forecast (120 Hours Ahead) — Uncertainty: ±25%</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">1. Main Target-Day Impact-Based Forecast (IBF) — Primary Weight (Max 70.0)</div>
+        <div class="form-group">
+            <label for="ibf-level">Main IBF Category & Likelihood:</label>
             <select id="ibf-level" onchange="calculateSPI()">
-                <option value="0">Minimal Impact / Low Likelihood (0.0 pts)</option>
-                <option value="10">Minor Impact / Medium Likelihood (10.0 pts)</option>
-                <option value="20">Minor Impact / High Likelihood (20.0 pts)</option>
-                <option value="30">Significant Impact / Medium Likelihood (30.0 pts)</option>
-                <option value="40">Significant Impact / High Likelihood (40.0 pts)</option>
-                <option value="50">Severe Impact / Medium Likelihood (50.0 pts)</option>
-                <option value="60">Severe Impact / High Likelihood (60.0 pts) [Override Floor: 80%]</option>
+                <optgroup label="Minimal Impact">
+                    <option value="0|0">Minimal / Low Likelihood (0.0 pts) [Override Floor: 0%]</option>
+                    <option value="3|5">Minimal / Medium Likelihood (3.0 pts) [Override Floor: 5%]</option>
+                    <option value="6|10">Minimal / High Likelihood (6.0 pts) [Override Floor: 10%]</option>
+                </optgroup>
+                <optgroup label="Minor Impact">
+                    <option value="5|15">Minor / Low Likelihood (5.0 pts) [Override Floor: 15%]</option>
+                    <option value="10|25">Minor / Medium Likelihood (10.0 pts) [Override Floor: 25%]</option>
+                    <option value="18|35">Minor / High Likelihood (18.0 pts) [Override Floor: 35%]</option>
+                </optgroup>
+                <optgroup label="Significant Impact">
+                    <option value="22|40">Significant / Low Likelihood (22.0 pts) [Override Floor: 40%]</option>
+                    <option value="35|55">Significant / Medium Likelihood (35.0 pts) [Override Floor: 55%]</option>
+                    <option value="50|70">Significant / High Likelihood (50.0 pts) [Override Floor: 70%]</option>
+                </optgroup>
+                <optgroup label="Severe Impact">
+                    <option value="30|50">Severe / Low Likelihood (30.0 pts) [Override Floor: 50%]</option>
+                    <option value="55|78">Severe / Medium Likelihood (55.0 pts) [Override Floor: 78%]</option>
+                    <option value="70|92">Severe / High Likelihood (70.0 pts) [Override Floor: 92%]</option>
+                </optgroup>
             </select>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">2. PAGASA 24-HR Rainfall Forecast Map (Separate Component)</div>
+        <div class="card-title">2. 24-HR Rainfall Forecast Map — Secondary Driver (Max 35.0)</div>
         <div class="form-group">
-            <label for="forecast-24h-map">Target Day 24-HR Forecast Map Threshold:</label>
+            <label for="forecast-24h-map">24-HR Forecast Rainfall Total:</label>
             <select id="forecast-24h-map" onchange="calculateSPI()">
-                <option value="0">&lt; 50 mm (Light to Moderate / Minimal Risk) — 0.0 pts</option>
-                <option value="15">50 - 100 mm (Yellow Zone: Localized Flooding) — 15.0 pts</option>
-                <option value="30">100 - 200 mm (Orange Zone: Widespread Flooding Likely) — 30.0 pts [Override Floor: 65%]</option>
-                <option value="45">&gt; 200 mm (Red Zone: Severe/Extreme Flooding) — 45.0 pts [Override Floor: 85%]</option>
+                <option value="0|0">&lt; 50 mm (Below Warning Threshold) — 0.0 pts [Override Floor: 0%]</option>
+                <option value="12|20">50 - 100 mm (Yellow Zone: Localized Flooding) — 12.0 pts [Override Floor: 20%]</option>
+                <option value="24|62">100 - 200 mm (Orange Zone: Widespread Flooding) — 24.0 pts [Override Floor: 62%]</option>
+                <option value="35|84">&gt; 200 mm (Red Zone: Extreme Flooding) — 35.0 pts [Override Floor: 84%]</option>
             </select>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">3. Key Forecast Hours (mm/hr)</div>
+        <div class="card-title">3. Short-Range 12-Hour IBF — Tertiary Driver (Max 20.0)</div>
+        <div class="form-group">
+            <label for="ibf-12h">12-Hour Short-Range IBF Category & Likelihood:</label>
+            <select id="ibf-12h" onchange="calculateSPI()">
+                <optgroup label="Minimal Impact">
+                    <option value="0|0">Minimal / Low Likelihood (0.0 pts) [Override Floor: 0%]</option>
+                    <option value="1|0">Minimal / Medium Likelihood (1.0 pts) [Override Floor: 0%]</option>
+                    <option value="2|0">Minimal / High Likelihood (2.0 pts) [Override Floor: 0%]</option>
+                </optgroup>
+                <optgroup label="Minor Impact">
+                    <option value="4|10">Minor / Low Likelihood (4.0 pts) [Override Floor: 10%]</option>
+                    <option value="5.5|14">Minor / Medium Likelihood (5.5 pts) [Override Floor: 14%]</option>
+                    <option value="7|18">Minor / High Likelihood (7.0 pts) [Override Floor: 18%]</option>
+                </optgroup>
+                <optgroup label="Significant Impact">
+                    <option value="10|28">Significant / Low Likelihood (10.0 pts) [Override Floor: 28%]</option>
+                    <option value="12|35">Significant / Medium Likelihood (12.0 pts) [Override Floor: 35%]</option>
+                    <option value="14|42">Significant / High Likelihood (14.0 pts) [Override Floor: 42%]</option>
+                </optgroup>
+                <optgroup label="Severe Impact">
+                    <option value="16|48">Severe / Low Likelihood (16.0 pts) [Override Floor: 48%]</option>
+                    <option value="18|56">Severe / Medium Likelihood (18.0 pts) [Override Floor: 56%]</option>
+                    <option value="20|65">Severe / High Likelihood (20.0 pts) [Override Floor: 65%]</option>
+                </optgroup>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">4. Key Time-Block Forecast Rain Rates (mm/hr) (Max 25.0)</div>
         <div class="grid-2">
             <div class="form-group">
                 <label for="block-1">7 PM - 11 PM [10% Wt]:</label>
@@ -240,8 +286,15 @@
     </div>
 
     <div class="card">
-        <div class="card-title">4. Rain Accumulation / Current Heavy Rainfall Warning</div>
+        <div class="card-title">5. Prior Rain Accumulation (12h/24h) & Active Warnings</div>
         <div class="grid-2">
+            <div class="form-group">
+                <label for="accum-12">Prior 12-Hour Accumulation (mm):</label>
+                <div class="range-container">
+                    <input type="range" id="accum-12" min="0" max="150" step="0.1" value="0" oninput="calculateSPI()">
+                    <div class="range-value" id="accum-12-val">0.0 mm</div>
+                </div>
+            </div>
             <div class="form-group">
                 <label for="accum-24">Prior 24-Hour Accumulation (mm):</label>
                 <div class="range-container">
@@ -249,15 +302,15 @@
                     <div class="range-value" id="accum-24-val">0.0 mm</div>
                 </div>
             </div>
-            <div class="form-group">
-                <label for="warning-level">Active Short-Term Heavy Rainfall Warning:</label>
-                <select id="warning-level" onchange="calculateSPI()">
-                    <option value="0">None / Light Advisory (0.0 pts)</option>
-                    <option value="5">Yellow Warning (5.0 pts)</option>
-                    <option value="10">Orange Warning (10.0 pts)</option>
-                    <option value="15">Red Warning (15.0 pts)</option>
-                </select>
-            </div>
+        </div>
+        <div class="form-group" style="margin-top:10px;">
+            <label for="warning-level">Active Short-Term Heavy Rainfall Warning:</label>
+            <select id="warning-level" onchange="calculateSPI()">
+                <option value="0">None / No Advisory (0.0 pts)</option>
+                <option value="4">Yellow Warning (4.0 pts)</option>
+                <option value="8">Orange Warning (8.0 pts)</option>
+                <option value="12">Red Warning (12.0 pts)</option>
+            </select>
         </div>
     </div>
 
@@ -267,41 +320,54 @@
             <thead>
                 <tr>
                     <th>Component</th>
-                    <th>Sub-system Weight</th>
-                    <th>Points Contributed</th>
+                    <th>Base Weight</th>
+                    <th>Raw Points</th>
                     <th>Active Override Floor</th>
+                    <th>Final Additive Contribution</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>Target-Day IBF</td>
-                    <td>Primary Driver (Max 60.0)</td>
-                    <td id="t-ibf-pts">0.00%</td>
-                    <td id="t-ibf-floor">None</td>
+                    <td>Main Target-Day IBF</td>
+                    <td>Primary (Max 70.0)</td>
+                    <td id="t-ibf-pts">0.00 pts</td>
+                    <td id="t-ibf-floor">0.00%</td>
+                    <td id="t-ibf-final">0.00%</td>
                 </tr>
                 <tr>
                     <td>24-HR Forecast Map</td>
-                    <td>Separate Component (Max 45.0)</td>
-                    <td id="t-map-pts">0.00%</td>
-                    <td id="t-map-floor">None</td>
+                    <td>Secondary (Max 35.0)</td>
+                    <td id="t-map-pts">0.00 pts</td>
+                    <td id="t-map-floor">0.00%</td>
+                    <td id="t-map-final">0.00%</td>
+                </tr>
+                <tr>
+                    <td>12-HR Short-Range IBF</td>
+                    <td>Tertiary (Max 20.0)</td>
+                    <td id="t-ibf12-pts">0.00 pts</td>
+                    <td id="t-ibf12-floor">0.00%</td>
+                    <td id="t-ibf12-final">0.00%</td>
                 </tr>
                 <tr>
                     <td>Key Time Forecast</td>
-                    <td>Commute Weighted (Max 30.0)</td>
-                    <td id="t-block-pts">0.00%</td>
+                    <td>Commute (Max 25.0)</td>
+                    <td id="t-block-pts">0.00 pts</td>
                     <td>—</td>
+                    <td id="t-block-final">0.00%</td>
                 </tr>
                 <tr>
-                    <td>Accumulation / Warning</td>
-                    <td>Background Mod (Max 15.0)</td>
-                    <td id="t-accum-pts">0.00%</td>
+                    <td>Prior Accumulation (12h/24h)</td>
+                    <td>Background (Max 12.0)</td>
+                    <td id="t-accum-pts">0.00 pts</td>
                     <td>—</td>
+                    <td id="t-accum-final">0.00%</td>
                 </tr>
                 <tr>
-                    <td>Active Short-Term Warning ($W_{\text{warning}}$)</td>
-                    <td>Background Mod (Max 15.0)</td>
-                    <td id="t-warn-pts">0.00%</td>
+                    <td>Active Short-Term Warning</td>
+                    <td>Background (Max 12.0)</td>
+                    <td id="t-warn-pts">0.00 pts</td>
                     <td>—</td>
+                    <td id="t-warn-final">0.00%</td>
                 </tr>
             </tbody>
         </table>
@@ -316,21 +382,21 @@ function interpolate(val, minIn, maxIn, minOut, maxOut) {
 }
 
 function calculateSPI() {
-    // 1. Target Day IBF
-    const ibfPts = parseFloat(document.getElementById('ibf-level').value);
-    let ibfFloor = 0;
-    if (ibfPts >= 60) ibfFloor = 80;
-    else if (ibfPts >= 40) ibfFloor = 60;
-    else if (ibfPts >= 30) ibfFloor = 45;
+    // Lead Day Horizon & Uncertainty Margin
+    const leadHorizon = parseInt(document.getElementById('lead-horizon').value);
+    const uncertaintyMargins = { 1: 0.04, 2: 0.08, 3: 0.13, 4: 0.18, 5: 0.25 };
+    const uncertaintyMargin = uncertaintyMargins[leadHorizon] || 0.04;
 
-    // 2. 24-HR Rainfall Forecast Map
-    const mapPts = parseFloat(document.getElementById('forecast-24h-map').value);
-    let mapFloor = 0;
-    if (mapPts >= 45) mapFloor = 85;
-    else if (mapPts >= 30) mapFloor = 65;
-    else if (mapPts >= 15) mapFloor = 35;
+    // 1. Main IBF Parse
+    const [ibfPtsRaw, ibfFloorRaw] = document.getElementById('ibf-level').value.split('|').map(Number);
+    
+    // 2. 24-HR Forecast Map Parse
+    const [mapPtsRaw, mapFloorRaw] = document.getElementById('forecast-24h-map').value.split('|').map(Number);
 
-    // 3. Time-Block Forecast
+    // 3. 12-HR Short-Range IBF Parse
+    const [ibf12PtsRaw, ibf12FloorRaw] = document.getElementById('ibf-12h').value.split('|').map(Number);
+
+    // 4. Time-Block Forecast
     const b1 = parseFloat(document.getElementById('block-1').value);
     const b2 = parseFloat(document.getElementById('block-2').value);
     const b3 = parseFloat(document.getElementById('block-3').value);
@@ -341,35 +407,68 @@ function calculateSPI() {
     document.getElementById('block-3-val').innerText = `${b3.toFixed(1)} mm/h`;
     document.getElementById('block-4-val').innerText = `${b4.toFixed(1)} mm/h`;
 
-    const scoreB1 = interpolate(b1, 0, 25, 0, 30);
-    const scoreB2 = interpolate(b2, 0, 25, 0, 30);
-    const scoreB3 = interpolate(b3, 0, 25, 0, 30);
-    const scoreB4 = interpolate(b4, 0, 25, 0, 30);
+    const scoreB1 = interpolate(b1, 0, 25, 0, 25);
+    const scoreB2 = interpolate(b2, 0, 25, 0, 25);
+    const scoreB3 = interpolate(b3, 0, 25, 0, 25);
+    const scoreB4 = interpolate(b4, 0, 25, 0, 25);
 
     const blockPts = (0.10 * scoreB1) + (0.50 * scoreB2) + (0.25 * scoreB3) + (0.15 * scoreB4);
 
-    // 4. Background Modifiers
+    // 5. Prior Accumulation (12-HR and 24-HR)
+    const acc12 = parseFloat(document.getElementById('accum-12').value);
     const acc24 = parseFloat(document.getElementById('accum-24').value);
+    document.getElementById('accum-12-val').innerText = `${acc12.toFixed(1)} mm`;
     document.getElementById('accum-24-val').innerText = `${acc24.toFixed(1)} mm`;
-    const accumPts = interpolate(acc24, 0, 150, 0, 15);
 
+    const pts12Acc = interpolate(acc12, 0, 100, 0, 12);
+    const pts24Acc = interpolate(acc24, 0, 200, 0, 12);
+    const accumPts = (0.6 * pts12Acc) + (0.4 * pts24Acc);
+
+    // 6. Active Warning
     const warnPts = parseFloat(document.getElementById('warning-level').value);
 
-    // Sum Base Model Score
-    let rawSum = ibfPts + mapPts + blockPts + accumPts + warnPts;
-    
-    // Scale Sum to percentage (Max potential ~165 normalized down)
-    let calculatedSPI = (rawSum / 140) * 100;
+    // Override Floor Calculations
+    const items = [
+        { id: 'ibf', rawPts: ibfPtsRaw, floor: ibfFloorRaw },
+        { id: 'map', rawPts: mapPtsRaw, floor: mapFloorRaw },
+        { id: 'ibf12', rawPts: ibf12PtsRaw, floor: ibf12FloorRaw }
+    ];
 
-    // Apply Active Floor Overrides
-    const activeFloor = Math.max(ibfFloor, mapFloor);
-    let finalSPI = Math.max(calculatedSPI, activeFloor);
+    // Find the maximum override floor value among options that have floor > 0
+    let highestFloorValue = 0;
+    items.forEach(item => {
+        if (item.floor > highestFloorValue) {
+            highestFloorValue = item.floor;
+        }
+    });
+
+    let highestAssigned = false;
+    let contribs = {};
+
+    items.forEach(item => {
+        if (item.floor > 0 && item.floor === highestFloorValue && !highestAssigned) {
+            // The single highest override keeps its full Override Floor value
+            contribs[item.id] = item.floor;
+            highestAssigned = true;
+        } else if (item.floor > 0) {
+            // Any other lower override floor goes through the formula (OF - RP)
+            contribs[item.id] = item.floor - item.rawPts;
+        } else {
+            // Standard raw points for items without an override floor
+            contribs[item.id] = item.rawPts;
+        }
+    });
+
+    let ibfContrib = contribs['ibf'];
+    let mapContrib = contribs['map'];
+    let ibf12Contrib = contribs['ibf12'];
+
+    let finalSPI = ibfContrib + mapContrib + ibf12Contrib + blockPts + accumPts + warnPts;
     if (finalSPI > 100) finalSPI = 100;
 
-    // Min-Max Uncertainty Range
-    const uncertainty = 0.05; // +/- 5%
-    let minSPI = Math.max(0, finalSPI * (1 - uncertainty));
-    let maxSPI = Math.min(100, finalSPI * (1 + uncertainty));
+    // Uncertainty Calculation Range
+    let minSPI = Math.max(0, finalSPI * (1 - uncertaintyMargin));
+    let maxSPI = Math.min(100, finalSPI * (1 + uncertaintyMargin));
 
     // UI Updates
     document.getElementById('spi-score').innerText = finalSPI.toFixed(2) + "%";
@@ -382,12 +481,12 @@ function calculateSPI() {
         badge.innerText = "Near-Certain Suspension";
         badge.style.backgroundColor = "#ef4444";
         badge.style.color = "#ffffff";
-        actionText.innerText = "Target-day indicators trigger automatic/widespread class suspensions.";
+        actionText.innerText = "Automatic/widespread class & work suspensions expected across affected LGUs.";
     } else if (finalSPI >= 60) {
         badge.innerText = "High Risk";
         badge.style.backgroundColor = "#f97316";
         badge.style.color = "#ffffff";
-        actionText.innerText = "High likelihood of early morning class suspensions across all levels.";
+        actionText.innerText = "High likelihood of widespread suspensions announced early morning (4:00-5:30 AM).";
     } else if (finalSPI >= 35) {
         badge.innerText = "Moderate Risk";
         badge.style.backgroundColor = "#eab308";
@@ -401,15 +500,26 @@ function calculateSPI() {
     }
 
     // Breakdown Table Render
-    document.getElementById('t-ibf-pts').innerText = `${ibfPts.toFixed(1)}%`;
-    document.getElementById('t-ibf-floor').innerText = ibfFloor > 0 ? `${ibfFloor}% Floor` : 'None';
+    document.getElementById('t-ibf-pts').innerText = `${ibfPtsRaw.toFixed(1)} pts`;
+    document.getElementById('t-ibf-floor').innerText = `${ibfFloorRaw.toFixed(1)}%`;
+    document.getElementById('t-ibf-final').innerText = `${ibfContrib.toFixed(2)}%`;
 
-    document.getElementById('t-map-pts').innerText = `${mapPts.toFixed(1)}%`;
-    document.getElementById('t-map-floor').innerText = mapFloor > 0 ? `${mapFloor}% Floor` : 'None';
+    document.getElementById('t-map-pts').innerText = `${mapPtsRaw.toFixed(1)} pts`;
+    document.getElementById('t-map-floor').innerText = `${mapFloorRaw.toFixed(1)}%`;
+    document.getElementById('t-map-final').innerText = `${mapContrib.toFixed(2)}%`;
 
-    document.getElementById('t-block-pts').innerText = `${blockPts.toFixed(2)}%`;
-    document.getElementById('t-accum-pts').innerText = `${accumPts.toFixed(2)}%`;
-    document.getElementById('t-warn-pts').innerText = `${warnPts.toFixed(1)}%`;
+    document.getElementById('t-ibf12-pts').innerText = `${ibf12PtsRaw.toFixed(1)} pts`;
+    document.getElementById('t-ibf12-floor').innerText = `${ibf12FloorRaw.toFixed(1)}%`;
+    document.getElementById('t-ibf12-final').innerText = `${ibf12Contrib.toFixed(2)}%`;
+
+    document.getElementById('t-block-pts').innerText = `${blockPts.toFixed(2)} pts`;
+    document.getElementById('t-block-final').innerText = `${blockPts.toFixed(2)}%`;
+
+    document.getElementById('t-accum-pts').innerText = `${accumPts.toFixed(2)} pts`;
+    document.getElementById('t-accum-final').innerText = `${accumPts.toFixed(2)}%`;
+
+    document.getElementById('t-warn-pts').innerText = `${warnPts.toFixed(1)} pts`;
+    document.getElementById('t-warn-final').innerText = `${warnPts.toFixed(2)}%`;
 }
 
 // Initial Run
