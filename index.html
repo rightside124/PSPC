@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAGASA Target-Day Suspension Probability Index (SPI)</title>
+    <title>Matthew's Suspension Chance Calculator</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -148,6 +148,10 @@
         }
 
         .breakdown-table th { color: #94a3b8; }
+        
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -159,7 +163,7 @@
     </div>
 
     <div class="card result-card">
-        <div>Target-Day Suspension Probability Index (SPI)</div>
+        <div>Suspension Chances</div>
         <div id="spi-score" class="spi-score">0.00%</div>
         <div id="spi-range" class="spi-range">Uncertainty Range: Min 0.00% — Max 0.00%</div>
         <div id="status-badge" class="status-badge" style="background:#334155;">Low Risk</div>
@@ -167,23 +171,23 @@
     </div>
 
     <div class="card">
-        <div class="card-title">0. Forecast Lead Horizon (Up to 5 Days)</div>
+        <div class="card-title">0. Forecast Day (Up to 5 Days)</div>
         <div class="form-group">
-            <label for="lead-horizon">Select Target Forecast Horizon:</label>
+            <label for="lead-horizon">Select Target Forecast Day:</label>
             <select id="lead-horizon" onchange="calculateSPI()">
                 <option value="1">Day 1 Forecast (Next 24 Hours / Target Day) — Uncertainty: ±4%</option>
-                <option value="2">Day 2 Forecast (48 Hours Ahead) — Uncertainty: ±8%</option>
-                <option value="3">Day 3 Forecast (72 Hours Ahead) — Uncertainty: ±13%</option>
-                <option value="4">Day 4 Forecast (96 Hours Ahead) — Uncertainty: ±18%</option>
-                <option value="5">Day 5 Forecast (120 Hours Ahead) — Uncertainty: ±25%</option>
+                <option value="2">Day 2 Forecast (48 Hours Ahead) — Uncertainty: ±8% [Warnings Disabled]</option>
+                <option value="3">Day 3 Forecast (72 Hours Ahead) — Uncertainty: ±13% [12h IBF & Warnings Disabled]</option>
+                <option value="4">Day 4 Forecast (96 Hours Ahead) — Uncertainty: ±18% [12h IBF & Warnings Disabled]</option>
+                <option value="5">Day 5 Forecast (120 Hours Ahead) — Uncertainty: ±25% [12h IBF & Warnings Disabled]</option>
             </select>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">1. Main Target-Day Impact-Based Forecast (IBF) — Primary Weight (Max 70.0)</div>
+        <div class="card-title" id="ibf-card-title">1. 24-Hour Impact-Based Forecast (PAGASA NCR-PRSD / 3PM) — Primary Weight (Max 70.0)</div>
         <div class="form-group">
-            <label for="ibf-level">Main IBF Category & Likelihood:</label>
+            <label for="ibf-level">24 Hour Impact-Based Forecast Categories:</label>
             <select id="ibf-level" onchange="calculateSPI()">
                 <optgroup label="Minimal Impact">
                     <option value="0|0">Minimal / Low Likelihood (0.0 pts) [Override Floor: 0%]</option>
@@ -210,7 +214,7 @@
     </div>
 
     <div class="card">
-        <div class="card-title">2. 24-HR Rainfall Forecast Map — Secondary Driver (Max 35.0)</div>
+        <div class="card-title" id="map-card-title">2. 24-HR Rainfall Forecast Map (PAGASA / 3x a day) — Secondary Driver (Max 35.0)</div>
         <div class="form-group">
             <label for="forecast-24h-map">24-HR Forecast Rainfall Total:</label>
             <select id="forecast-24h-map" onchange="calculateSPI()">
@@ -222,10 +226,10 @@
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-title">3. Short-Range 12-Hour IBF — Tertiary Driver (Max 20.0)</div>
+    <div class="card" id="card-12h-ibf">
+        <div class="card-title">3. 12-hour Impact-Based Forecast (PAGASA NCR-PRSD / 3AM) — Tertiary Driver (Max 20.0)</div>
         <div class="form-group">
-            <label for="ibf-12h">12-Hour Short-Range IBF Category & Likelihood:</label>
+            <label for="ibf-12h">12-Hour Impact-Based Forecast Categories:</label>
             <select id="ibf-12h" onchange="calculateSPI()">
                 <optgroup label="Minimal Impact">
                     <option value="0|0">Minimal / Low Likelihood (0.0 pts) [Override Floor: 0%]</option>
@@ -286,7 +290,7 @@
     </div>
 
     <div class="card">
-        <div class="card-title">5. Prior Rain Accumulation (12h/24h) & Active Warnings</div>
+        <div class="card-title">5. Prior Rain Accumulation (12h/24h) & Heavy Rainfall Warnings</div>
         <div class="grid-2">
             <div class="form-group">
                 <label for="accum-12">Prior 12-Hour Accumulation (mm):</label>
@@ -303,19 +307,25 @@
                 </div>
             </div>
         </div>
-        <div class="form-group" style="margin-top:10px;">
-            <label for="warning-level">Active Short-Term Heavy Rainfall Warning:</label>
+        <div class="form-group" id="warning-group" style="margin-top:10px;">
+            <label for="warning-level">Heavy Rainfall Warning Status:</label>
             <select id="warning-level" onchange="calculateSPI()">
                 <option value="0">None / No Advisory (0.0 pts)</option>
-                <option value="4">Yellow Warning (4.0 pts)</option>
-                <option value="8">Orange Warning (8.0 pts)</option>
-                <option value="12">Red Warning (12.0 pts)</option>
+                <optgroup label="Rainfall Warning Level">
+                    <option value="4">Yellow Warning (4.0 pts)</option>
+                    <option value="8">Orange Warning (8.0 pts)</option>
+                    <option value="12">Red Warning (12.0 pts)</option>
+                </optgroup>
+                <optgroup label="Rainfall Advisory Status">
+                    <option value="2">EXPECTING — Advance Advisory (2.0 pts)</option>
+                    <option value="5">AFFECTING — Ongoing Rainfall (5.0 pts)</option>
+                </optgroup>
             </select>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">Target-Day Formula Score Breakdown</div>
+        <div class="card-title">Suspension Chances Breakdown</div>
         <table class="breakdown-table">
             <thead>
                 <tr>
@@ -327,43 +337,43 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>Main Target-Day IBF</td>
-                    <td>Primary (Max 70.0)</td>
+                <tr id="row-ibf">
+                    <td>24-hour Impact-Based Forecast</td>
+                    <td id="t-ibf-weight">Primary (Max 70.0)</td>
                     <td id="t-ibf-pts">0.00 pts</td>
                     <td id="t-ibf-floor">0.00%</td>
                     <td id="t-ibf-final">0.00%</td>
                 </tr>
-                <tr>
-                    <td>24-HR Forecast Map</td>
-                    <td>Secondary (Max 35.0)</td>
+                <tr id="row-map">
+                    <td>24-hour Forecast Map</td>
+                    <td id="t-map-weight">Secondary (Max 35.0)</td>
                     <td id="t-map-pts">0.00 pts</td>
                     <td id="t-map-floor">0.00%</td>
                     <td id="t-map-final">0.00%</td>
                 </tr>
-                <tr>
-                    <td>12-HR Short-Range IBF</td>
+                <tr id="row-ibf12">
+                    <td>12-hour Impact-Based Forecast</td>
                     <td>Tertiary (Max 20.0)</td>
                     <td id="t-ibf12-pts">0.00 pts</td>
                     <td id="t-ibf12-floor">0.00%</td>
                     <td id="t-ibf12-final">0.00%</td>
                 </tr>
                 <tr>
-                    <td>Key Time Forecast</td>
+                    <td>Key Time Forecasts</td>
                     <td>Commute (Max 25.0)</td>
                     <td id="t-block-pts">0.00 pts</td>
                     <td>—</td>
                     <td id="t-block-final">0.00%</td>
                 </tr>
                 <tr>
-                    <td>Prior Accumulation (12h/24h)</td>
+                    <td>Rain Accumulation (12h/24h)</td>
                     <td>Background (Max 12.0)</td>
                     <td id="t-accum-pts">0.00 pts</td>
                     <td>—</td>
                     <td id="t-accum-final">0.00%</td>
                 </tr>
-                <tr>
-                    <td>Active Short-Term Warning</td>
+                <tr id="row-warn">
+                    <td>Current Heavy Rainfall Warning</td>
                     <td>Background (Max 12.0)</td>
                     <td id="t-warn-pts">0.00 pts</td>
                     <td>—</td>
@@ -387,14 +397,63 @@ function calculateSPI() {
     const uncertaintyMargins = { 1: 0.04, 2: 0.08, 3: 0.13, 4: 0.18, 5: 0.25 };
     const uncertaintyMargin = uncertaintyMargins[leadHorizon] || 0.04;
 
+    // Horizon conditions
+    const hideWarnings = leadHorizon >= 2; // Rainfall Warnings disabled Day 2+
+    const hide12hIBF = leadHorizon >= 3;   // 12h IBF disabled Day 3+
+
+    // DOM Elements
+    const card12h = document.getElementById('card-12h-ibf');
+    const warningGroup = document.getElementById('warning-group');
+    const row12h = document.getElementById('row-ibf12');
+    const rowWarn = document.getElementById('row-warn');
+
+    // Toggle 12h IBF UI
+    if (hide12hIBF) {
+        card12h.classList.add('hidden');
+        row12h.classList.add('hidden');
+    } else {
+        card12h.classList.remove('hidden');
+        row12h.classList.remove('hidden');
+    }
+
+    // Toggle Warning UI
+    if (hideWarnings) {
+        warningGroup.classList.add('hidden');
+        rowWarn.classList.add('hidden');
+    } else {
+        warningGroup.classList.remove('hidden');
+        rowWarn.classList.remove('hidden');
+    }
+
+    // Reallocation Calculations
+    // Base capacities: Main IBF = 70, Map = 35, 12h IBF = 20, Warning = 12
+    let ibfMax = 70.0;
+    let mapMax = 35.0;
+
+    if (hideWarnings) {
+        ibfMax += 8.0;  // Reallocate 8 pts from Warning
+        mapMax += 4.0;  // Reallocate 4 pts from Warning
+    }
+    if (hide12hIBF) {
+        ibfMax += 13.0; // Reallocate 13 pts from 12h IBF
+        mapMax += 7.0;  // Reallocate 7 pts from 12h IBF
+    }
+
+    document.getElementById('ibf-card-title').innerText = `1. Main Target-Day Impact-Based Forecast (IBF) — Primary Weight (Max ${ibfMax.toFixed(1)})`;
+    document.getElementById('map-card-title').innerText = `2. 24-HR Rainfall Forecast Map — Secondary Driver (Max ${mapMax.toFixed(1)})`;
+    document.getElementById('t-ibf-weight').innerText = `Primary (Max ${ibfMax.toFixed(1)})`;
+    document.getElementById('t-map-weight').innerText = `Secondary (Max ${mapMax.toFixed(1)})`;
+
     // 1. Main IBF Parse
-    const [ibfPtsRaw, ibfFloorRaw] = document.getElementById('ibf-level').value.split('|').map(Number);
-    
+    let [ibfPtsRaw, ibfFloorRaw] = document.getElementById('ibf-level').value.split('|').map(Number);
+    ibfPtsRaw = ibfPtsRaw * (ibfMax / 70.0);
+
     // 2. 24-HR Forecast Map Parse
-    const [mapPtsRaw, mapFloorRaw] = document.getElementById('forecast-24h-map').value.split('|').map(Number);
+    let [mapPtsRaw, mapFloorRaw] = document.getElementById('forecast-24h-map').value.split('|').map(Number);
+    mapPtsRaw = mapPtsRaw * (mapMax / 35.0);
 
     // 3. 12-HR Short-Range IBF Parse
-    const [ibf12PtsRaw, ibf12FloorRaw] = document.getElementById('ibf-12h').value.split('|').map(Number);
+    let [ibf12PtsRaw, ibf12FloorRaw] = hide12hIBF ? [0, 0] : document.getElementById('ibf-12h').value.split('|').map(Number);
 
     // 4. Time-Block Forecast
     const b1 = parseFloat(document.getElementById('block-1').value);
@@ -425,7 +484,7 @@ function calculateSPI() {
     const accumPts = (0.6 * pts12Acc) + (0.4 * pts24Acc);
 
     // 6. Active Warning
-    const warnPts = parseFloat(document.getElementById('warning-level').value);
+    const warnPts = hideWarnings ? 0 : parseFloat(document.getElementById('warning-level').value);
 
     // Override Floor Calculations
     const items = [
@@ -434,7 +493,6 @@ function calculateSPI() {
         { id: 'ibf12', rawPts: ibf12PtsRaw, floor: ibf12FloorRaw }
     ];
 
-    // Find the maximum override floor value among options that have floor > 0
     let highestFloorValue = 0;
     items.forEach(item => {
         if (item.floor > highestFloorValue) {
@@ -447,14 +505,11 @@ function calculateSPI() {
 
     items.forEach(item => {
         if (item.floor > 0 && item.floor === highestFloorValue && !highestAssigned) {
-            // The single highest override keeps its full Override Floor value
             contribs[item.id] = item.floor;
             highestAssigned = true;
         } else if (item.floor > 0) {
-            // Any other lower override floor goes through the formula (OF - RP)
             contribs[item.id] = item.floor - item.rawPts;
         } else {
-            // Standard raw points for items without an override floor
             contribs[item.id] = item.rawPts;
         }
     });
